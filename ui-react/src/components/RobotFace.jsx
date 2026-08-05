@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 const PATHS = {
   eyes: {
     neutral: {
-      left: "M 145 185 Q 160 165 175 185 Q 160 205 145 185",
-      right: "M 225 185 Q 240 165 255 185 Q 240 205 225 185",
-      fill: "var(--neon-blue)"
+      left: "M 145 185 Q 160 162 175 185 Q 160 208 145 185",
+      right: "M 225 185 Q 240 162 255 185 Q 240 208 225 185",
+      fill: "var(--neon-green)"
     },
     happy: {
       left: "M 145 190 Q 160 170 175 190",
@@ -35,8 +35,8 @@ const PATHS = {
   },
   eyebrows: {
     neutral: {
-      left: "M 140 155 Q 155 155 170 155",
-      right: "M 230 155 Q 245 155 260 155"
+      left: "M 140 148 Q 155 140 170 148",
+      right: "M 230 148 Q 245 140 260 148"
     },
     happy: {
       left: "M 140 150 Q 155 142 170 150",
@@ -60,7 +60,7 @@ const PATHS = {
     }
   },
   mouth: {
-    neutral: "M 175 235 Q 200 235 225 235",
+    neutral: "M 170 230 Q 200 258 230 230",
     happy: "M 175 225 Q 200 255 225 225",
     sad: "M 175 250 Q 200 220 225 250",
     surprised: "M 190 235 Q 200 215 210 235 Q 200 255 190 235",
