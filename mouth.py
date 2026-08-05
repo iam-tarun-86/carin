@@ -23,9 +23,19 @@ class Mouth:
     def _playback_worker(self):
         from state_manager import state_manager
         while True:
-            audio_data = self.audio_queue.get()
-            if audio_data is None:
+            item = self.audio_queue.get()
+            if item is None:
                 break
+            
+            # Unpack audio data and sentence emotion if provided
+            if isinstance(item, tuple):
+                audio_data, sentence_emotion = item
+            else:
+                audio_data, sentence_emotion = item, None
+
+            if sentence_emotion:
+                state_manager.set_emotion(sentence_emotion)
+                
             state_manager.set_state("speaking")
             
             # Stream playback in small frame chunks to calculate real-time viseme openness
@@ -48,7 +58,7 @@ class Mouth:
             if self.audio_queue.empty():
                 state_manager.set_state("idle")
 
-    def speak_sentence(self, text: str):
+    def speak_sentence(self, text: str, emotion: str = None):
         if not text.strip():
             return
         generator = self.pipeline(text, voice=self.voice, speed=1.1, split_pattern=r'\n+')
@@ -59,7 +69,7 @@ class Mouth:
                     audio_np = audio.numpy()
                 else:
                     audio_np = np.array(audio)
-                self.audio_queue.put(audio_np)
+                self.audio_queue.put((audio_np, emotion))
 
     def wait_until_done(self):
         self.audio_queue.join()
@@ -68,11 +78,19 @@ class SentenceStreamBuffer:
     def __init__(self, mouth_instance: Mouth):
         self.mouth = mouth_instance
         self.buffer = ""
+        self.current_emotion = "neutral"
         # Punctuation regex for split boundaries
         self.sentence_end_pattern = re.compile(r'([.!?\n]+)')
+        self.emotion_pattern = re.compile(r'\[(happy|sad|surprised|excited|angry|hesitant|refusing|neutral)\]', re.IGNORECASE)
 
     def push_token(self, token: str):
         self.buffer += token
+        
+        # Check if new token updates current sentence emotion
+        emo_match = self.emotion_pattern.search(token)
+        if emo_match:
+            self.current_emotion = emo_match.group(1).lower()
+
         parts = self.sentence_end_pattern.split(self.buffer)
         
         # If we have complete sentence parts + remainder
@@ -80,15 +98,18 @@ class SentenceStreamBuffer:
             # Reconstruct sentences up to the last split
             for i in range(0, len(parts) - 1, 2):
                 sentence = parts[i] + parts[i+1]
-                if sentence.strip():
-                    print(f"\n[Mouth Synthesis Trigger] '{sentence.strip()}'")
-                    self.mouth.speak_sentence(sentence.strip())
+                # Strip inline emotion tags before TTS synthesis
+                clean_sentence = self.emotion_pattern.sub('', sentence).strip()
+                if clean_sentence:
+                    print(f"\n[Mouth Synthesis Trigger] [{self.current_emotion.upper()}] '{clean_sentence}'")
+                    self.mouth.speak_sentence(clean_sentence, emotion=self.current_emotion)
             self.buffer = parts[-1]
 
     def flush(self):
-        if self.buffer.strip():
-            print(f"\n[Mouth Synthesis Flush] '{self.buffer.strip()}'")
-            self.mouth.speak_sentence(self.buffer.strip())
+        clean_sentence = self.emotion_pattern.sub('', self.buffer).strip()
+        if clean_sentence:
+            print(f"\n[Mouth Synthesis Flush] [{self.current_emotion.upper()}] '{clean_sentence}'")
+            self.mouth.speak_sentence(clean_sentence, emotion=self.current_emotion)
             self.buffer = ""
 
 if __name__ == "__main__":
