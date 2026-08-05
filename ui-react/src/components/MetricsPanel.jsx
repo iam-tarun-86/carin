@@ -57,7 +57,7 @@ export default function MetricsPanel({ wsStatus, state, emotion, services = {}, 
             <span className="label">EMOTION OVERRIDE</span>
           </div>
           <div className="emotion-buttons" style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
-            {["neutral", "happy", "sad", "surprised", "excited", "angry"].map((emo) => (
+            {["neutral", "happy", "sad", "surprised", "excited", "angry", "hesitant", "refusing"].map((emo) => (
               <button
                 key={emo}
                 onClick={() => onSelectEmotion && onSelectEmotion(emo)}

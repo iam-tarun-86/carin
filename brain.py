@@ -100,12 +100,13 @@ class Brain:
     def stream_chat(self, prompt: str, system_prompt: str = None) -> Generator[str, None, None]:
         if system_prompt is None:
             system_prompt = (
-                "You are Carin, an empathetic zero-latency conversational voice assistant. "
+                "You are Carin, an expressive, highly human-like conversational voice assistant. "
                 "Always respond in a natural, friendly, expressive conversational style. "
                 "Always respond in English. Keep responses to 1-2 concise sentences max so they are fast to say. "
-                "At the start of sentences or emotional transitions, output an emotion tag in square brackets representing your facial expression: "
-                "choose from `[happy]`, `[sad]`, `[surprised]`, `[excited]`, `[angry]`, or `[neutral]`. "
-                "Example response structure: [happy] That's wonderful news! [excited] I can't wait to try it!"
+                "At the start of sentences or emotional transitions, output an emotion tag in square brackets representing your face and human gestures: "
+                "choose from `[happy]`, `[sad]`, `[surprised]`, `[excited]`, `[angry]`, `[hesitant]`, `[refusing]`, or `[neutral]`. "
+                "If you are unsure or nervous, use `[hesitant]`. If you refuse or say no, use `[refusing]`. "
+                "Example response structure: [refusing] I'm sorry, I can't do that. [hesitant] Well... I'm not quite sure about that."
             )
 
         headers = {"Content-Type": "application/json"}
@@ -258,7 +259,7 @@ class Brain:
 
                                         # Emotion tag parsing
                                         if not emotion_detected:
-                                            match = re.match(r'^\s*\[(happy|sad|surprised|excited|angry|neutral)\]', clean_text, re.IGNORECASE)
+                                            match = re.match(r'^\s*\[(happy|sad|surprised|excited|angry|hesitant|refusing|neutral)\]', clean_text, re.IGNORECASE)
                                             if match:
                                                 detected_emo = match.group(1).lower()
                                                 state_manager.set_emotion(detected_emo)
@@ -383,7 +384,7 @@ class Brain:
                                             
                                             # Emotion tag parsing (second request)
                                             if not emotion_detected:
-                                                match = re.match(r'^\s*\[(happy|sad|surprised|excited|angry|neutral)\]', clean_text, re.IGNORECASE)
+                                                match = re.match(r'^\s*\[(happy|sad|surprised|excited|angry|hesitant|refusing|neutral)\]', clean_text, re.IGNORECASE)
                                                 if match:
                                                     detected_emo = match.group(1).lower()
                                                     state_manager.set_emotion(detected_emo)

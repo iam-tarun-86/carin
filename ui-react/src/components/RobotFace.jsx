@@ -31,6 +31,16 @@ const PATHS = {
       left: "M 145 180 Q 160 200 175 180",
       right: "M 225 180 Q 240 200 255 180",
       fill: "none"
+    },
+    hesitant: {
+      left: "M 145 180 Q 160 190 175 185",
+      right: "M 225 185 Q 240 175 255 185",
+      fill: "none"
+    },
+    refusing: {
+      left: "M 145 185 Q 160 170 175 185",
+      right: "M 225 185 Q 240 170 255 185",
+      fill: "var(--neon-orange)"
     }
   },
   eyebrows: {
@@ -57,6 +67,14 @@ const PATHS = {
     angry: {
       left: "M 140 145 Q 155 158 170 162",
       right: "M 230 162 Q 245 158 260 145"
+    },
+    hesitant: {
+      left: "M 140 145 Q 155 155 170 150",
+      right: "M 230 142 Q 245 138 260 145"
+    },
+    refusing: {
+      left: "M 140 145 Q 155 158 170 165",
+      right: "M 230 165 Q 245 158 260 145"
     }
   },
   mouth: {
@@ -66,6 +84,8 @@ const PATHS = {
     surprised: "M 178 235 A 22 28 0 1 0 222 235 A 22 28 0 1 0 178 235",
     excited: "M 170 220 Q 200 265 230 220",
     angry: "M 175 245 Q 200 220 225 245",
+    hesitant: "M 175 238 Q 195 248 215 232 Q 225 238 230 240",
+    refusing: "M 170 245 H 230",
     thinking: "M 185 235 H 215"
   }
 };
@@ -106,7 +126,9 @@ export default function RobotFace({ state, emotion, viseme }) {
     sad: "#0077ff",
     surprised: "#ff00ea",
     excited: "var(--neon-purple)",
-    angry: "var(--neon-red)"
+    angry: "var(--neon-red)",
+    hesitant: "var(--neon-orange)",
+    refusing: "var(--neon-red)"
   };
   const activeColor = EMOTION_COLORS[emo] || "var(--neon-green)";
 
@@ -117,10 +139,11 @@ export default function RobotFace({ state, emotion, viseme }) {
   const blushOpacity = (emo === "happy" || emo === "excited") ? "0.6" : "0";
 
   return (
-    <div className="face-container" id="face-wrapper">
+    <div className={`face-container emotion-${emo}`} id="face-wrapper">
       <div className="glow-effect" style={{
         background: `radial-gradient(circle, ${activeColor}33, transparent 70%)`
       }}></div>
+      
       <svg id="robot-svg" viewBox="0 0 400 400">
         <defs>
           {/* visorglow drop-shadow */}
@@ -134,7 +157,7 @@ export default function RobotFace({ state, emotion, viseme }) {
         </defs>
 
         {/* Pure Neon Glowing Face Features */}
-        <g id="neon-face">
+        <g id="neon-face" className={emo === "refusing" ? "gesture-head-shake" : ""}>
           {/* Eyebrows */}
           <path id="left-eyebrow" d={eyebrowStyle.left} stroke={activeColor} strokeWidth="4.5" strokeLinecap="round" fill="none" filter="url(#neon-glow)" style={{ transition: "stroke 0.3s" }} />
           <path id="right-eyebrow" d={eyebrowStyle.right} stroke={activeColor} strokeWidth="4.5" strokeLinecap="round" fill="none" filter="url(#neon-glow)" style={{ transition: "stroke 0.3s" }} />
@@ -151,6 +174,40 @@ export default function RobotFace({ state, emotion, viseme }) {
 
           {/* Mouth */}
           <path id="mouth" d={mouthPath} stroke={activeColor} strokeWidth="5.5" strokeLinecap="round" fill="none" filter="url(#neon-glow)" style={{ transition: "stroke 0.3s" }} />
+
+          {/* --- GESTURE OVERLAYS --- */}
+
+          {/* 1. Sweat Drop Gesture (for [hesitant] / nervous 😅) */}
+          {emo === "hesitant" && (
+            <g id="gesture-sweat-drop" filter="url(#neon-glow)" className="sweat-drop-anim">
+              <path d="M 285 135 C 285 125, 292 118, 292 118 C 292 118, 299 125, 299 135 C 299 142, 293 147, 285 147 C 278 147, 285 142, 285 135 Z" fill="#00f2fe" opacity="0.95" />
+            </g>
+          )}
+
+          {/* 2. Refusal Cross Arms / No Hands Gesture (for [refusing] 🙅‍♂️) */}
+          {emo === "refusing" && (
+            <g id="gesture-refusal-hands" filter="url(#neon-glow)" className="refusal-hands-anim">
+              {/* Hand 1 crossing */}
+              <path d="M 140 270 L 260 310" stroke="var(--neon-red)" strokeWidth="6" strokeLinecap="round" opacity="0.9" />
+              {/* Hand 2 crossing */}
+              <path d="M 260 270 L 140 310" stroke="var(--neon-red)" strokeWidth="6" strokeLinecap="round" opacity="0.9" />
+            </g>
+          )}
+
+          {/* 3. Waving Hand / Sparkles Gesture (for [happy] / [excited] 👋) */}
+          {(emo === "happy" || emo === "excited") && (
+            <g id="gesture-happy-sparkles" filter="url(#neon-glow)">
+              <path d="M 290 120 L 295 130 L 305 135 L 295 140 L 290 150 L 285 140 L 275 135 L 285 130 Z" fill="var(--neon-blue)" opacity="0.8" className="sparkle-anim" />
+              <path d="M 100 120 L 105 127 L 115 130 L 105 133 L 100 140 L 95 133 L 85 130 L 95 127 Z" fill="var(--neon-purple)" opacity="0.8" className="sparkle-anim-delayed" />
+            </g>
+          )}
+
+          {/* 4. Anger Mark Symbol (for [angry] 💢) */}
+          {emo === "angry" && (
+            <g id="gesture-anger-mark" filter="url(#neon-glow)" className="anger-anim">
+              <path d="M 270 125 Q 285 125 285 140 M 285 140 Q 285 155 300 155 M 300 140 Q 285 140 285 125 M 285 155 Q 285 140 270 140" stroke="var(--neon-red)" strokeWidth="4" strokeLinecap="round" fill="none" />
+            </g>
+          )}
         </g>
       </svg>
     </div>
