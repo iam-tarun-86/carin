@@ -1,0 +1,9 @@
+faster-whisper
+kokoro
+soundfile
+sounddevice
+pyaudio
+requests
+httpx
+torch
+torchaudio

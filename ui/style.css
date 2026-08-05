@@ -1,0 +1,516 @@
+:root {
+  --bg-dark: #030611;
+  --panel-bg: rgba(10, 16, 32, 0.45);
+  --border-color: rgba(0, 242, 254, 0.15);
+  --text-primary: #e2e8f0;
+  --text-muted: #64748b;
+  
+  /* Neon Accent Colors */
+  --neon-blue: #00f2fe;
+  --neon-green: #00ff87;
+  --neon-purple: #bd00ff;
+  --neon-red: #ff3b30;
+  --neon-orange: #ff9500;
+  
+  --shadow-glow: 0 0 20px rgba(0, 242, 254, 0.25);
+  --transition-speed: 0.3s;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Stunning Ambient Glow Background */
+.glass-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 75% 20%, rgba(189, 0, 255, 0.12), transparent 45%),
+              radial-gradient(circle at 20% 70%, rgba(0, 242, 254, 0.12), transparent 45%),
+              #03050c;
+  z-index: -1;
+  filter: blur(10px);
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 320px;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.brand h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, #fff, var(--neon-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-glow {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--neon-blue);
+  box-shadow: 0 0 12px var(--neon-blue);
+}
+
+.version {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stats-panel h3, .control-help h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: all var(--transition-speed);
+}
+
+.metric-card:hover {
+  border-color: var(--border-color);
+  background: rgba(0, 242, 254, 0.02);
+}
+
+.metric-card .label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.metric-card .value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.value.connected {
+  color: var(--neon-green);
+  text-shadow: 0 0 8px rgba(0, 255, 135, 0.4);
+}
+
+.value.disconnected {
+  color: var(--neon-red);
+  text-shadow: 0 0 8px rgba(255, 59, 48, 0.4);
+}
+
+.control-help {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
+.indicator.running {
+  background-color: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+}
+
+/* Main Content Layout */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Visualization Section styling */
+.visualizer-section {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.face-container {
+  width: 320px;
+  height: 320px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-speed);
+}
+
+.glow-effect {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 242, 254, 0.15), transparent 70%);
+  filter: blur(20px);
+  z-index: 1;
+  transition: background var(--transition-speed);
+}
+
+#robot-svg {
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+/* Ring Animations */
+#glow-ring-outer {
+  transform-origin: center;
+  animation: breathing 4s ease-in-out infinite;
+  transition: stroke var(--transition-speed);
+}
+
+#glow-ring-inner {
+  transform-origin: center;
+  transition: stroke var(--transition-speed);
+}
+
+/* Head and Base transitions */
+#head-base {
+  transition: stroke var(--transition-speed);
+}
+
+#left-ear, #right-ear {
+  transition: stroke var(--transition-speed);
+}
+
+/* Eye Screen and Eye transitions */
+#left-eye, #right-eye {
+  transition: d var(--transition-speed), stroke var(--transition-speed), fill var(--transition-speed);
+}
+
+#mouth {
+  transition: d var(--transition-speed), stroke var(--transition-speed);
+}
+
+/* Real-time state indicator text */
+.state-indicator-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  margin-top: 1rem;
+  color: var(--neon-blue);
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+  transition: all var(--transition-speed);
+}
+
+/* Transcript Box styling */
+.transcript-section {
+  flex: 2;
+  background: rgba(3, 6, 17, 0.6);
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.transcript-box {
+  flex: 1;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding-right: 0.5rem;
+}
+
+/* Custom Scrollbar for Transcript */
+.transcript-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.transcript-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.transcript-box::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.transcript-box::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+.chat-placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2rem;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+/* Bubble Styling */
+.message-bubble {
+  max-width: 85%;
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  line-height: 1.5;
+  font-size: 1rem;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.message-bubble.user {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.message-bubble.assistant {
+  background: rgba(0, 242, 254, 0.03);
+  border: 1px solid rgba(0, 242, 254, 0.1);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.message-bubble.assistant.streaming {
+  border-style: dashed;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.05);
+}
+
+.message-bubble .speaker-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.user .speaker-tag {
+  color: var(--text-muted);
+}
+
+.assistant .speaker-tag {
+  color: var(--neon-blue);
+}
+
+/* State changes class selectors */
+
+/* 1. LISTENING state */
+body.state-listening {
+  --neon-blue: var(--neon-purple);
+}
+body.state-listening #glow-ring-outer {
+  animation: breathing 1.5s ease-in-out infinite, pulseGlow 1.5s ease-in-out infinite;
+}
+
+/* 2. THINKING state */
+body.state-thinking {
+  --neon-blue: var(--neon-orange);
+}
+body.state-thinking #glow-ring-inner {
+  animation: spinInner 6s linear infinite;
+}
+
+/* 3. SPEAKING state */
+body.state-speaking {
+  --neon-blue: var(--neon-green);
+}
+body.state-speaking #glow-ring-outer {
+  animation: talkPulse 0.4s ease-in-out infinite alternate;
+}
+
+/* Transitions for new face parts */
+#left-eyebrow, #right-eyebrow {
+  transition: d var(--transition-speed), stroke var(--transition-speed);
+}
+
+#antenna-stem {
+  transform-origin: bottom center;
+  animation: antennaWobble 6s ease-in-out infinite;
+  transition: stroke var(--transition-speed);
+}
+
+#antenna-bulb {
+  animation: bulbPulse 2s ease-in-out infinite alternate;
+  transition: fill var(--transition-speed);
+}
+
+/* Floating Head & Background HUD Ring */
+#robot-head {
+  animation: floatHead 5s ease-in-out infinite;
+  transition: all var(--transition-speed);
+}
+
+#hud-bracket {
+  transform-origin: center;
+  animation: spinInner 24s linear infinite;
+}
+
+#left-ear-core {
+  animation: blinkLed 1.5s infinite;
+}
+
+#right-ear-core {
+  animation: blinkLed 1.5s infinite 0.75s;
+}
+
+@keyframes floatHead {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes blinkLed {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 3px var(--neon-blue));
+  }
+}
+
+/* Animations declarations */
+@keyframes breathing {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.5;
+  }
+}
+
+@keyframes spinInner {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px var(--neon-blue));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px var(--neon-blue));
+  }
+}
+
+@keyframes talkPulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.015);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bulbPulse {
+  0% {
+    filter: drop-shadow(0 0 2px var(--neon-blue));
+    opacity: 0.8;
+  }
+  100% {
+    filter: drop-shadow(0 0 16px var(--neon-blue));
+    opacity: 1;
+  }
+}
+
+@keyframes antennaWobble {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}

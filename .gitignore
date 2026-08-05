@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+venv311/
+.venv/
+node_modules/
+dist/
+ui-react/node_modules/
+ui-react/dist/
+*.mp4
+.vscode/
+.DS_Store
