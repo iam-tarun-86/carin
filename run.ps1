@@ -42,7 +42,7 @@ Write-Host ""
 
 # Start Pocket TTS Server in background
 Write-Host "[INFO] Starting Pocket TTS Server on port 8086..." -ForegroundColor Cyan
-$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\pocket-tts.exe server --port 8086" -NoNewWindow -PassThru
+$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\pocket-tts.exe serve --port 8086" -NoNewWindow -PassThru
 
 # Start React Dev Server in background
 Write-Host "[INFO] Starting React UI Dev Server..." -ForegroundColor Cyan
