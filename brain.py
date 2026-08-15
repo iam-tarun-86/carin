@@ -4,6 +4,7 @@ import httpx
 import queue
 import threading
 from typing import Generator
+from memory import MemoryManager
 
 class SyncMCPClient:
     def __init__(self, base_url: str):
@@ -96,6 +97,7 @@ class Brain:
     def __init__(self, api_url: str = "http://localhost:8085/v1/chat/completions"):
         # Windows 11 port forwarding routes localhost:8085 to WSL2 when llama-server is listening on 0.0.0.0 in WSL2
         self.api_url = api_url
+        self.memory = MemoryManager()
 
     def stream_chat(self, prompt: str, system_prompt: str = None) -> Generator[str, None, None]:
         if system_prompt is None:
@@ -177,10 +179,12 @@ class Brain:
             }
         ]
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ]
+        # Fetch conversation history and semantic recall context
+        history_messages = self.memory.get_context(prompt)
+
+        messages = [{"role": "system", "content": system_prompt}]
+        messages.extend(history_messages)
+        messages.append({"role": "user", "content": prompt})
 
         payload = {
             "messages": messages,
@@ -415,6 +419,7 @@ class Brain:
             yield msg
         finally:
             full_ans = "".join(total_response_text)
+            self.memory.add_exchange(prompt, full_ans)
             state_manager.send_assistant_complete(full_ans)
 
 if __name__ == "__main__":
