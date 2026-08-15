@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import RobotFace from "./components/RobotFace";
+import HologramFace from "./components/HologramFace";
 import MetricsPanel from "./components/MetricsPanel";
 import ChatLogs from "./components/ChatLogs";
 import "./App.css";
@@ -142,10 +142,10 @@ export default function App() {
       {/* Main Content Area */}
       <main className="main-content">
         
-        {/* Robot Face Visualization */}
-        <section className="visualizer-section">
-          <RobotFace state={state} emotion={emotion} viseme={viseme} amplitude={amplitude} />
-          <div className="state-indicator-text">{state.toUpperCase()}</div>
+        {/* Hologram Face Visualization */}
+        <section className="visualizer-section" style={{ position: 'relative', width: '100%', height: '400px', overflow: 'hidden', borderRadius: '15px' }}>
+          <HologramFace emotion={emotion} amplitude={amplitude} />
+          <div className="state-indicator-text" style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 10 }}>{state.toUpperCase()}</div>
         </section>
 
         {/* Conversation log section */}
