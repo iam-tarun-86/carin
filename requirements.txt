@@ -8,3 +8,4 @@ httpx
 torch
 torchaudio
 chromadb
+pocket-tts
