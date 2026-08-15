@@ -40,15 +40,25 @@ Write-Host ""
 Write-Host "[INFO] Starting Voice Agent Orchestrator & React UI Dev Server..." -ForegroundColor Cyan
 Write-Host ""
 
+# Start Pocket TTS Server in background
+Write-Host "[INFO] Starting Pocket TTS Server on port 8086..." -ForegroundColor Cyan
+$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\python.exe -m pocket_tts.server --port 8086" -NoNewWindow -PassThru
+
 # Start React Dev Server in background
+Write-Host "[INFO] Starting React UI Dev Server..." -ForegroundColor Cyan
 $ViteProcess = Start-Process cmd.exe -ArgumentList "/c npm run dev --prefix ui-react" -NoNewWindow -PassThru
 
 try {
+    Write-Host "[INFO] Starting Voice Agent Orchestrator (main.py)..." -ForegroundColor Cyan
     & ".\venv311\Scripts\python.exe" "main.py"
 } finally {
     if ($ViteProcess) {
         Write-Host ""
         Write-Host "[INFO] Stopping React dev server..." -ForegroundColor Cyan
         Stop-Process -Id $ViteProcess.Id -Force -ErrorAction SilentlyContinue
+    }
+    if ($PocketTTSProcess) {
+        Write-Host "[INFO] Stopping Pocket TTS Server..." -ForegroundColor Cyan
+        Stop-Process -Id $PocketTTSProcess.Id -Force -ErrorAction SilentlyContinue
     }
 }

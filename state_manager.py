@@ -154,6 +154,12 @@ class StateManager:
             "text": text
         })
 
+    def send_audio_amplitude(self, amplitude):
+        self._broadcast({
+            "type": "audio_amplitude",
+            "amplitude": round(float(amplitude), 4)
+        })
+
     def send_viseme(self, loudness, mouth_openness):
         self._broadcast({
             "type": "viseme",
