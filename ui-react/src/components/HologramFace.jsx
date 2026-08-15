@@ -18,9 +18,10 @@ function ResponsiveRobotHead({ emotion, amplitude }) {
   const getEmotionConfig = () => {
       switch(emotion) {
           case 'happy': return { color: '#00ffcc', eyeScaleY: 0.2, eyeScaleX: 1.2 }; 
-          case 'angry': return { color: '#ff003c', eyeScaleY: 0.5, eyeScaleX: 0.8, eyeRotZ: 0.2 }; 
-          case 'sad': return { color: '#0066ff', eyeScaleY: 1.2, eyeScaleX: 0.8, eyeRotZ: -0.2 }; 
+          case 'angry': return { color: '#ff003c', eyeScaleY: 0.5, eyeScaleX: 0.8, eyeRotZ: 0.3 }; 
+          case 'sad': return { color: '#0066ff', eyeScaleY: 1.2, eyeScaleX: 0.8, eyeRotZ: -0.3 }; 
           case 'surprised': return { color: '#ffcc00', eyeScaleY: 1.5, eyeScaleX: 1.0, eyeRotZ: 0 }; 
+          case 'hesitant': return { color: '#0066ff', eyeScaleY: 0.8, eyeScaleX: 0.9, eyeRotZ: -0.1 }; 
           default: return { color: '#bb86fc', eyeScaleY: 1.0, eyeScaleX: 1.0, eyeRotZ: 0 }; 
       }
   };
@@ -41,7 +42,7 @@ function ResponsiveRobotHead({ emotion, amplitude }) {
         headGroupRef.current.rotation.x = THREE.MathUtils.lerp(headGroupRef.current.rotation.x, -targetMouse.current.y, 0.1);
         
         // Add a slight natural breathing hover
-        headGroupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05;
+        headGroupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
 
     // 2. Emotion Morph Targets (Simulated by scaling and rotating primitive eyes)
@@ -61,8 +62,8 @@ function ResponsiveRobotHead({ emotion, amplitude }) {
 
     // 3. Real-Time Lip Sync
     if (mouthRef.current) {
-        // Minimum mouth scale is 0.1 (closed), maximum is based on amplitude
-        const targetMouthScale = Math.max(0.1, amplitude * 3.0);
+        // Fix disappearing mouth: Minimum scale 0.15, max scales with amplitude
+        const targetMouthScale = Math.max(0.15, amplitude * 5.0);
         mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, targetMouthScale, 0.3);
         mouthRef.current.material.color.lerp(materialColor, 0.1);
     }
@@ -70,25 +71,32 @@ function ResponsiveRobotHead({ emotion, amplitude }) {
 
   return (
     <group ref={headGroupRef}>
-      {/* Base Visor / Head */}
-      <RoundedBox args={[2.5, 3, 2]} position={[0, 0, -0.5]} radius={0.3} smoothness={4}>
-        <meshStandardMaterial color="#222222" roughness={0.2} metalness={0.8} envMapIntensity={1} />
-      </RoundedBox>
-
       {/* Left Eye */}
-      <RoundedBox ref={leftEyeRef} args={[0.6, 0.6, 0.1]} position={[-0.6, 0.5, 0.55]} radius={0.1} smoothness={2}>
+      <RoundedBox ref={leftEyeRef} args={[0.8, 0.8, 0.2]} position={[-1.2, 0.5, 0]} radius={0.2} smoothness={2}>
         <meshBasicMaterial color={config.color} toneMapped={false} />
       </RoundedBox>
 
       {/* Right Eye */}
-      <RoundedBox ref={rightEyeRef} args={[0.6, 0.6, 0.1]} position={[0.6, 0.5, 0.55]} radius={0.1} smoothness={2}>
+      <RoundedBox ref={rightEyeRef} args={[0.8, 0.8, 0.2]} position={[1.2, 0.5, 0]} radius={0.2} smoothness={2}>
         <meshBasicMaterial color={config.color} toneMapped={false} />
       </RoundedBox>
 
       {/* Mouth */}
-      <RoundedBox ref={mouthRef} args={[1.2, 0.2, 0.1]} position={[0, -0.8, 0.55]} radius={0.05} smoothness={2}>
+      <RoundedBox ref={mouthRef} args={[1.6, 0.3, 0.2]} position={[0, -1.2, 0]} radius={0.1} smoothness={2}>
         <meshBasicMaterial color={config.color} toneMapped={false} />
       </RoundedBox>
+
+      {/* Geometric Expression Particles */}
+      {(emotion === 'sad' || emotion === 'hesitant') && (
+        <Sphere args={[0.15, 16, 16]} position={[1.8, 0.8, 0.2]} scale={[1, 1.5, 1]}>
+          <meshBasicMaterial color="#00ffff" toneMapped={false} />
+        </Sphere>
+      )}
+      {emotion === 'angry' && (
+        <Cylinder args={[0.0, 0.3, 0.8, 3]} position={[1.5, 1.2, 0]} rotation={[0, 0, -0.5]}>
+           <meshBasicMaterial color="#ff003c" toneMapped={false} />
+        </Cylinder>
+      )}
     </group>
   );
 }

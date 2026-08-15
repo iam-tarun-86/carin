@@ -132,26 +132,34 @@ export default function App() {
     };
   }, []);
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
     <div className="app-container">
       <div className="glass-bg"></div>
       
-      {/* Sidebar Control Panel */}
-      <MetricsPanel wsStatus={wsStatus} state={state} emotion={emotion} services={services} onSelectEmotion={sendEmotion} />
+      {/* Settings Toggle Button */}
+      <button className="settings-toggle-btn" onClick={() => setIsSettingsOpen(true)} title="Open Settings">
+        ⚙️
+      </button>
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        
-        {/* Hologram Face Visualization */}
-        <section className="visualizer-section" style={{ position: 'relative', width: '100%', height: '400px', overflow: 'hidden', borderRadius: '15px' }}>
-          <HologramFace emotion={emotion} amplitude={amplitude} />
-          <div className="state-indicator-text" style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 10 }}>{state.toUpperCase()}</div>
-        </section>
-
-        {/* Conversation log section */}
-        <ChatLogs messages={messages} />
-
+      {/* Main Content Area - Full Screen */}
+      <main className="visualizer-section">
+        <HologramFace emotion={emotion} amplitude={amplitude} />
+        <div className="state-indicator-text" style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
+          {state.toUpperCase()}
+        </div>
       </main>
+
+      {/* Settings Modal */}
+      <div className={`settings-modal-overlay ${isSettingsOpen ? 'open' : ''}`} onClick={(e) => {
+        if(e.target.className.includes('settings-modal-overlay')) setIsSettingsOpen(false);
+      }}>
+        <div className="settings-modal">
+          <MetricsPanel wsStatus={wsStatus} state={state} emotion={emotion} services={services} onSelectEmotion={sendEmotion} />
+          <ChatLogs messages={messages} />
+        </div>
+      </div>
     </div>
   );
 }
