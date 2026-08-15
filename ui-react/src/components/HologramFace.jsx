@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Sphere, Box, Cylinder, MeshDistortMaterial } from '@react-three/drei';
 import * as THREE from 'three';
+import AudioAura from './AudioAura';
 
 function ResponsiveRobotHead({ emotion, amplitude }) {
   const headGroupRef = useRef();
@@ -103,6 +104,9 @@ export default function HologramFace({ emotion = 'neutral', amplitude = 0 }) {
 
         {/* The 3D Interactive Object */}
         <ResponsiveRobotHead emotion={emotion} amplitude={amplitude} />
+        
+        {/* Audio Reactive Particle Aura */}
+        <AudioAura emotion={emotion} amplitude={amplitude} />
 
         {/* Post-Processing Glow */}
         <EffectComposer disableNormalPass>
