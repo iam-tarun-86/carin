@@ -1,50 +1,94 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { Sphere, Box, Cylinder, MeshDistortMaterial } from '@react-three/drei';
+import * as THREE from 'three';
 
 function ResponsiveRobotHead({ emotion, amplitude }) {
-  const headRef = useRef();
+  const headGroupRef = useRef();
+  const leftEyeRef = useRef();
+  const rightEyeRef = useRef();
+  const mouthRef = useRef();
+  
+  // Smooth target variables
+  const targetMouse = useRef(new THREE.Vector2());
 
-  useFrame((state, delta) => {
-    // Basic reactive animation based on amplitude
-    // Make the head pulse slightly based on the audio
-    if (headRef.current) {
-        const targetScale = 1 + (amplitude * 0.5);
-        // Interpolate for smooth scaling
-        headRef.current.scale.lerp({ x: targetScale, y: targetScale, z: targetScale }, 0.1);
-        
-        // Slow rotation over time
-        headRef.current.rotation.y += delta * 0.5;
-        headRef.current.rotation.x = Math.sin(state.clock.elapsedTime) * 0.1;
-    }
-  });
-
-  // Change color based on emotion
-  const getColor = () => {
+  // Determine colors and shapes based on emotion
+  const getEmotionConfig = () => {
       switch(emotion) {
-          case 'happy': return '#00ffcc'; // neon cyan
-          case 'angry': return '#ff003c'; // neon red
-          case 'sad': return '#0066ff'; // deep blue
-          case 'surprised': return '#ffcc00'; // neon yellow
-          default: return '#bb86fc'; // neutral purple
+          case 'happy': return { color: '#00ffcc', eyeScaleY: 0.2, eyeScaleX: 1.2 }; 
+          case 'angry': return { color: '#ff003c', eyeScaleY: 0.5, eyeScaleX: 0.8, eyeRotZ: 0.2 }; 
+          case 'sad': return { color: '#0066ff', eyeScaleY: 1.2, eyeScaleX: 0.8, eyeRotZ: -0.2 }; 
+          case 'surprised': return { color: '#ffcc00', eyeScaleY: 1.5, eyeScaleX: 1.0, eyeRotZ: 0 }; 
+          default: return { color: '#bb86fc', eyeScaleY: 1.0, eyeScaleX: 1.0, eyeRotZ: 0 }; 
       }
   };
 
+  const config = getEmotionConfig();
+  const materialColor = new THREE.Color(config.color);
+
+  useFrame((state, delta) => {
+    // 1. Cursor Tracking
+    targetMouse.current.set(
+      (state.pointer.x * Math.PI) / 4, 
+      (state.pointer.y * Math.PI) / 4
+    );
+    
+    if (headGroupRef.current) {
+        // Smoothly rotate the head group towards the mouse
+        headGroupRef.current.rotation.y = THREE.MathUtils.lerp(headGroupRef.current.rotation.y, targetMouse.current.x, 0.1);
+        headGroupRef.current.rotation.x = THREE.MathUtils.lerp(headGroupRef.current.rotation.x, -targetMouse.current.y, 0.1);
+        
+        // Add a slight natural breathing hover
+        headGroupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05;
+    }
+
+    // 2. Emotion Morph Targets (Simulated by scaling and rotating primitive eyes)
+    if (leftEyeRef.current && rightEyeRef.current) {
+        leftEyeRef.current.scale.y = THREE.MathUtils.lerp(leftEyeRef.current.scale.y, config.eyeScaleY, 0.1);
+        leftEyeRef.current.scale.x = THREE.MathUtils.lerp(leftEyeRef.current.scale.x, config.eyeScaleX, 0.1);
+        leftEyeRef.current.rotation.z = THREE.MathUtils.lerp(leftEyeRef.current.rotation.z, config.eyeRotZ, 0.1);
+        
+        rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, config.eyeScaleY, 0.1);
+        rightEyeRef.current.scale.x = THREE.MathUtils.lerp(rightEyeRef.current.scale.x, config.eyeScaleX, 0.1);
+        rightEyeRef.current.rotation.z = THREE.MathUtils.lerp(rightEyeRef.current.rotation.z, -config.eyeRotZ, 0.1);
+
+        // Transition color smoothly
+        leftEyeRef.current.material.color.lerp(materialColor, 0.1);
+        rightEyeRef.current.material.color.lerp(materialColor, 0.1);
+    }
+
+    // 3. Real-Time Lip Sync
+    if (mouthRef.current) {
+        // Minimum mouth scale is 0.1 (closed), maximum is based on amplitude
+        const targetMouthScale = Math.max(0.1, amplitude * 3.0);
+        mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, targetMouthScale, 0.3);
+        mouthRef.current.material.color.lerp(materialColor, 0.1);
+    }
+  });
+
   return (
-    <Sphere ref={headRef} args={[1.5, 64, 64]} position={[0, 0, 0]}>
-      {/* MeshDistortMaterial gives it a liquid/blobby futuristic look, acting as a placeholder */}
-      <MeshDistortMaterial
-        color={getColor()}
-        envMapIntensity={1}
-        clearcoat={1}
-        clearcoatRoughness={0.1}
-        metalness={0.8}
-        roughness={0.2}
-        distort={0.4 + (amplitude * 2)} // More audio amplitude = more distortion
-        speed={2 + (amplitude * 5)}    // More audio amplitude = faster distortion
-      />
-    </Sphere>
+    <group ref={headGroupRef}>
+      {/* Base Visor / Head */}
+      <Box args={[2.5, 3, 2]} position={[0, 0, -0.5]} radius={0.5}>
+        <meshStandardMaterial color="#1a1a1a" roughness={0.1} metalness={0.9} />
+      </Box>
+
+      {/* Left Eye */}
+      <Box ref={leftEyeRef} args={[0.6, 0.6, 0.1]} position={[-0.6, 0.5, 0.55]}>
+        <meshBasicMaterial color={config.color} toneMapped={false} />
+      </Box>
+
+      {/* Right Eye */}
+      <Box ref={rightEyeRef} args={[0.6, 0.6, 0.1]} position={[0.6, 0.5, 0.55]}>
+        <meshBasicMaterial color={config.color} toneMapped={false} />
+      </Box>
+
+      {/* Mouth */}
+      <Box ref={mouthRef} args={[1.2, 0.2, 0.1]} position={[0, -0.8, 0.55]}>
+        <meshBasicMaterial color={config.color} toneMapped={false} />
+      </Box>
+    </group>
   );
 }
 
@@ -57,16 +101,17 @@ export default function HologramFace({ emotion = 'neutral', amplitude = 0 }) {
         <directionalLight position={[10, 10, 5]} intensity={1.5} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#00ffcc" />
 
-        {/* The 3D Object */}
+        {/* The 3D Interactive Object */}
         <ResponsiveRobotHead emotion={emotion} amplitude={amplitude} />
 
         {/* Post-Processing Glow */}
-        <EffectComposer>
+        <EffectComposer disableNormalPass>
           <Bloom
             luminanceThreshold={0.2}
             luminanceSmoothing={0.9}
-            intensity={2.5}
+            intensity={2.0}
             radius={0.8}
+            mipmapBlur
           />
         </EffectComposer>
       </Canvas>
