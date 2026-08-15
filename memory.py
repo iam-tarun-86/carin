@@ -54,10 +54,10 @@ class MemoryManager:
             
         conn.close()
 
-    def get_context(self, current_prompt: str, short_term_limit=6, long_term_limit=2) -> list:
+    def get_context(self, current_prompt: str, short_term_limit=6, long_term_limit=2) -> tuple:
         """
         Retrieves recent conversation history (short-term) and relevant past memories (long-term).
-        Returns a list of message dicts formatted for the LLM.
+        Returns a tuple: (list of history message dicts, recalled memory string)
         """
         context_messages = []
         
@@ -73,13 +73,9 @@ class MemoryManager:
         except Exception as e:
             print(f"[Memory Warning] ChromaDB query failed: {e}")
 
-        # Inject recalled memories as a system context block if they exist
+        memory_str = ""
         if recalled_memories:
             memory_str = "\n---\n".join(recalled_memories)
-            context_messages.append({
-                "role": "system", 
-                "content": f"RECALLED PAST CONTEXT (Use this if relevant to the user's prompt):\n{memory_str}"
-            })
 
         # 2. Fetch Short-Term History (Sliding Window)
         conn = sqlite3.connect(self.db_path)
@@ -92,4 +88,4 @@ class MemoryManager:
         for role, content in reversed(rows):
             context_messages.append({"role": role, "content": content})
             
-        return context_messages
+        return context_messages, memory_str

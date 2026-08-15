@@ -179,10 +179,15 @@ class Brain:
             }
         ]
 
-        # Fetch conversation history and semantic recall context
-        history_messages = self.memory.get_context(prompt)
+        # Fetch conversation history and semantic recall string
+        history_messages, memory_context = self.memory.get_context(prompt)
 
-        messages = [{"role": "system", "content": system_prompt}]
+        # Merge the memory context into the single system prompt to prevent Jinja template crashes
+        final_system_prompt = system_prompt
+        if memory_context:
+            final_system_prompt += f"\n\nRECALLED PAST CONTEXT (Use this if relevant to the user's prompt):\n{memory_context}"
+
+        messages = [{"role": "system", "content": final_system_prompt}]
         messages.extend(history_messages)
         messages.append({"role": "user", "content": prompt})
 
@@ -411,6 +416,14 @@ class Brain:
                                 except Exception:
                                     continue
                                     
+        except httpx.HTTPStatusError as exc:
+            err_msg = f"[Brain Error] Server returned {exc.response.status_code}. Response: {exc.response.text}"
+            print(err_msg)
+            yield " Sorry, the language model server returned an error."
+            msg = " Sorry, I couldn't reach the language model server."
+            state_manager.send_assistant_token(msg)
+            total_response_text.append(msg)
+            yield msg
         except Exception as e:
             print(f"\n[Brain Error] Failed to query LLM server at {self.api_url}: {e}")
             msg = " Sorry, I couldn't reach the language model server."
