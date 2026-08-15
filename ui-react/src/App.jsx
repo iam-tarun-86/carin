@@ -11,6 +11,7 @@ export default function App() {
   const [state, setState] = useState("idle");
   const [emotion, setEmotion] = useState("neutral");
   const [messages, setMessages] = useState([]);
+  const [amplitude, setAmplitude] = useState(0);
 
   const [viseme, setViseme] = useState({ loudness: 0, openness: 0 });
   const [services, setServices] = useState({
@@ -61,6 +62,10 @@ export default function App() {
 
             case "viseme":
               setViseme({ loudness: data.loudness, openness: data.openness });
+              break;
+
+            case "audio_amplitude":
+              setAmplitude(data.amplitude);
               break;
 
             case "services_status":
@@ -139,7 +144,7 @@ export default function App() {
         
         {/* Robot Face Visualization */}
         <section className="visualizer-section">
-          <RobotFace state={state} emotion={emotion} viseme={viseme} />
+          <RobotFace state={state} emotion={emotion} viseme={viseme} amplitude={amplitude} />
           <div className="state-indicator-text">{state.toUpperCase()}</div>
         </section>
 
