@@ -43,7 +43,7 @@ def main():
     except Exception as e:
         print(f"[Orchestrator Warning] Failed to open Web UI automatically: {e}")
 
-    ears = Ears(model_size="turbo", device="cuda", compute_type="float32")
+    ears = Ears(model_size="base.en", device="cuda", compute_type="float32")
     brain = Brain(api_url="http://localhost:8085/v1/chat/completions")
     mouth = Mouth()
 
