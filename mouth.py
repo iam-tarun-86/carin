@@ -4,75 +4,95 @@ import queue
 import threading
 import sounddevice as sd
 import numpy as np
-from kokoro import KPipeline
 
 import os
 os.environ["HF_HUB_OFFLINE"] = "1"
 
+import httpx
+
 class Mouth:
-    def __init__(self, lang_code: str = 'a', voice: str = 'af_heart'):
-        print("[Mouth] Initializing Kokoro-82M TTS Pipeline...")
-        self.pipeline = KPipeline(lang_code=lang_code, repo_id='hexgrad/Kokoro-82M')
+    def __init__(self, voice: str = 'en-US-JennyNeural'):
+        print("[Mouth] Initializing Pocket TTS Pipeline (CPU)...")
+        self.api_url = "http://localhost:8086/v1/audio/speech"
         self.voice = voice
         self.sample_rate = 24000
-        self.audio_queue = queue.Queue()
-        self.playback_thread = threading.Thread(target=self._playback_worker, daemon=True)
-        self.playback_thread.start()
-        print("[Mouth] TTS Pipeline ready.")
+        
+        # Audio buffer for active streaming playback
+        self.playback_buffer = np.array([], dtype='float32')
+        self.buffer_lock = threading.Lock()
+        self.is_synthesizing = False
+        
+        # Open continuous async stream
+        self.stream = sd.OutputStream(
+            samplerate=self.sample_rate,
+            channels=1,
+            dtype='float32',
+            callback=self._audio_callback,
+            blocksize=1024 # ~42ms blocks
+        )
+        self.stream.start()
+        print("[Mouth] Pocket TTS Pipeline and Audio Stream ready.")
 
-    def _playback_worker(self):
+    def _audio_callback(self, outdata, frames, time_info, status):
         from state_manager import state_manager
-        while True:
-            item = self.audio_queue.get()
-            if item is None:
-                break
-            
-            # Unpack audio data and sentence emotion if provided
-            if isinstance(item, tuple):
-                audio_data, sentence_emotion = item
+        with self.buffer_lock:
+            available = len(self.playback_buffer)
+            if available > 0:
+                take = min(available, frames)
+                chunk = self.playback_buffer[:take]
+                self.playback_buffer = self.playback_buffer[take:]
+                
+                outdata[:take, 0] = chunk
+                if take < frames:
+                    outdata[take:, 0] = 0
+                
+                # Calculate amplitude
+                rms = float(np.sqrt(np.mean(chunk ** 2)))
+                state_manager.send_audio_amplitude(rms)
+                state_manager.set_state("speaking")
             else:
-                audio_data, sentence_emotion = item, None
-
-            if sentence_emotion:
-                state_manager.set_emotion(sentence_emotion)
-                
-            state_manager.set_state("speaking")
-            
-            # Stream playback in small frame chunks to calculate real-time viseme openness
-            frame_size = int(self.sample_rate * 0.04) # 40ms frame chunks (25 fps sync)
-            total_samples = len(audio_data)
-            
-            sd.play(audio_data, samplerate=self.sample_rate)
-            
-            # Broadcast frame energy levels synchronized with playback loop
-            for offset in range(0, total_samples, frame_size):
-                chunk = audio_data[offset:offset + frame_size]
-                rms = float(np.sqrt(np.mean(chunk**2))) if len(chunk) > 0 else 0.0
-                openness = min(1.0, rms * 12.0) # Normalized openness multiplier
-                state_manager.send_viseme(loudness=rms, mouth_openness=openness)
-                time.sleep(0.04)
-                
-            sd.wait()
-            state_manager.send_viseme(loudness=0.0, mouth_openness=0.0)
-            self.audio_queue.task_done()
-            if self.audio_queue.empty():
-                state_manager.set_state("idle")
+                outdata[:, 0] = 0
+                state_manager.send_audio_amplitude(0.0)
 
     def speak_sentence(self, text: str, emotion: str = None):
         if not text.strip():
             return
-        generator = self.pipeline(text, voice=self.voice, speed=1.1, split_pattern=r'\n+')
-        for gs, ps, audio in generator:
-            if audio is not None:
-                # audio is a torch Tensor or numpy array
-                if hasattr(audio, 'numpy'):
-                    audio_np = audio.numpy()
-                else:
-                    audio_np = np.array(audio)
-                self.audio_queue.put((audio_np, emotion))
+        
+        from state_manager import state_manager
+        if emotion:
+            state_manager.set_emotion(emotion)
+            
+        self.is_synthesizing = True
+        try:
+            payload = {
+                "model": "pocket-tts-v1",
+                "input": text,
+                "voice": self.voice,
+                "response_format": "pcm"
+            }
+            # Stream raw PCM chunks directly from Pocket TTS server
+            with httpx.Client() as client:
+                with client.stream("POST", self.api_url, json=payload, timeout=10.0) as response:
+                    if response.status_code == 200:
+                        for chunk in response.iter_bytes(chunk_size=4096):
+                            if chunk:
+                                # Convert int16 PCM bytes to float32 numpy array
+                                audio_np = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
+                                with self.buffer_lock:
+                                    self.playback_buffer = np.concatenate([self.playback_buffer, audio_np])
+                    else:
+                        print(f"[Mouth Error] Pocket TTS returned {response.status_code}")
+        except Exception as e:
+            print(f"[Mouth Error] Failed to connect to Pocket TTS: {e}")
+        finally:
+            self.is_synthesizing = False
 
     def wait_until_done(self):
-        self.audio_queue.join()
+        while True:
+            with self.buffer_lock:
+                if len(self.playback_buffer) == 0 and not self.is_synthesizing:
+                    break
+            time.sleep(0.05)
 
 class SentenceStreamBuffer:
     def __init__(self, mouth_instance: Mouth):

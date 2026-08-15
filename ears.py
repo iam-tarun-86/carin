@@ -4,7 +4,7 @@ import whisper
 import numpy as np
 
 class Ears:
-    def __init__(self, model_size="base.en", device=None, compute_type=None):
+    def __init__(self, model_size="turbo", device=None, compute_type=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"[Ears] Loading OpenAI PyTorch Whisper model '{model_size}' on {self.device}...")
         self.model = whisper.load_model(model_size, device=self.device)
