@@ -39,9 +39,9 @@ export default function AudioAura({ amplitude, emotion }) {
     <Sparkles 
       ref={sparklesRef}
       count={400} 
-      scale={3} 
-      size={20 + (amplitude * 100)} // Particles get huge when loud
-      speed={0.4 + (amplitude * 2)} // Particles swirl faster when loud
+      scale={10} 
+      size={2 + (amplitude * 8)} // Particles pulse reasonably when loud
+      speed={0.2 + (amplitude * 1.5)} // Particles swirl faster when loud
       opacity={0.8}
       color={targetColor}
       noise={1.5}

@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Sphere, Box, Cylinder, MeshDistortMaterial } from '@react-three/drei';
+import { Sphere, Box, Cylinder, MeshDistortMaterial, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import AudioAura from './AudioAura';
 
@@ -71,24 +71,24 @@ function ResponsiveRobotHead({ emotion, amplitude }) {
   return (
     <group ref={headGroupRef}>
       {/* Base Visor / Head */}
-      <Box args={[2.5, 3, 2]} position={[0, 0, -0.5]} radius={0.5}>
-        <meshStandardMaterial color="#1a1a1a" roughness={0.1} metalness={0.9} />
-      </Box>
+      <RoundedBox args={[2.5, 3, 2]} position={[0, 0, -0.5]} radius={0.3} smoothness={4}>
+        <meshStandardMaterial color="#222222" roughness={0.2} metalness={0.8} envMapIntensity={1} />
+      </RoundedBox>
 
       {/* Left Eye */}
-      <Box ref={leftEyeRef} args={[0.6, 0.6, 0.1]} position={[-0.6, 0.5, 0.55]}>
+      <RoundedBox ref={leftEyeRef} args={[0.6, 0.6, 0.1]} position={[-0.6, 0.5, 0.55]} radius={0.1} smoothness={2}>
         <meshBasicMaterial color={config.color} toneMapped={false} />
-      </Box>
+      </RoundedBox>
 
       {/* Right Eye */}
-      <Box ref={rightEyeRef} args={[0.6, 0.6, 0.1]} position={[0.6, 0.5, 0.55]}>
+      <RoundedBox ref={rightEyeRef} args={[0.6, 0.6, 0.1]} position={[0.6, 0.5, 0.55]} radius={0.1} smoothness={2}>
         <meshBasicMaterial color={config.color} toneMapped={false} />
-      </Box>
+      </RoundedBox>
 
       {/* Mouth */}
-      <Box ref={mouthRef} args={[1.2, 0.2, 0.1]} position={[0, -0.8, 0.55]}>
+      <RoundedBox ref={mouthRef} args={[1.2, 0.2, 0.1]} position={[0, -0.8, 0.55]} radius={0.05} smoothness={2}>
         <meshBasicMaterial color={config.color} toneMapped={false} />
-      </Box>
+      </RoundedBox>
     </group>
   );
 }
