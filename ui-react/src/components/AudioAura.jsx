@@ -10,10 +10,13 @@ export default function AudioAura({ amplitude, emotion }) {
   const getEmotionColor = () => {
     switch(emotion) {
         case 'happy': return '#00ffcc'; 
-        case 'angry': return '#ff003c'; 
-        case 'sad': return '#0066ff'; 
-        case 'surprised': return '#ffcc00'; 
-        default: return '#bb86fc'; 
+        case 'excited': return '#00f3ff';
+        case 'angry': return '#ff0055'; 
+        case 'sad': return '#3a86ff'; 
+        case 'surprised': return '#ffbe0b'; 
+        case 'hesitant': return '#00b4d8';
+        case 'refusing': return '#e63946';
+        default: return '#00f3ff'; 
     }
   };
 
