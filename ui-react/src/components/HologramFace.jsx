@@ -120,21 +120,32 @@ function ResponsiveRobotHead({ emotion = 'neutral', amplitude = 0 }) {
   const targetColor = new THREE.Color(config.color);
 
   useFrame((state) => {
-    // 1. Interactive Cursor / Gyro Parallax Tracking
+    // 1. Cursor / Gaze Position Tracking (Normalized)
     targetMouse.current.set(
-      (state.pointer.x * Math.PI) / 6,
-      (state.pointer.y * Math.PI) / 6
+      state.pointer.x * 0.4,
+      state.pointer.y * 0.3
     );
 
     if (headGroupRef.current) {
-      headGroupRef.current.rotation.y = safeLerp(headGroupRef.current.rotation.y, targetMouse.current.x, 0.08, 0);
-      headGroupRef.current.rotation.x = safeLerp(headGroupRef.current.rotation.x, -targetMouse.current.y, 0.08, 0);
-      // Breathing floating offset
-      headGroupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.08;
+      // Keep head orientation stable - only gentle natural floating breathing
+      headGroupRef.current.rotation.x = 0;
+      headGroupRef.current.rotation.y = 0;
+      headGroupRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.8) * 0.05;
     }
 
-    // 2. Left & Right Eyes Scaling & Rotation
+    const eyeOffsetX = targetMouse.current.x;
+    const eyeOffsetY = targetMouse.current.y;
+
+    // 2. Left & Right Eyes - Gaze movement + Emotion Scaling
     if (leftEyeRef.current && rightEyeRef.current) {
+      // Smooth Eye Position Tracking
+      leftEyeRef.current.position.x = safeLerp(leftEyeRef.current.position.x, -1.1 + eyeOffsetX, 0.1, -1.1);
+      leftEyeRef.current.position.y = safeLerp(leftEyeRef.current.position.y, 0.45 + eyeOffsetY, 0.1, 0.45);
+
+      rightEyeRef.current.position.x = safeLerp(rightEyeRef.current.position.x, 1.1 + eyeOffsetX, 0.1, 1.1);
+      rightEyeRef.current.position.y = safeLerp(rightEyeRef.current.position.y, 0.45 + eyeOffsetY, 0.1, 0.45);
+
+      // Emotion Scaling & Rotation
       leftEyeRef.current.scale.x = safeLerp(leftEyeRef.current.scale.x, config.eyeScaleX, 0.12, 1.0);
       leftEyeRef.current.scale.y = safeLerp(leftEyeRef.current.scale.y, config.eyeScaleY, 0.12, 1.0);
       leftEyeRef.current.rotation.z = safeLerp(leftEyeRef.current.rotation.z, config.eyeRotZ, 0.12, 0.0);
@@ -147,12 +158,14 @@ function ResponsiveRobotHead({ emotion = 'neutral', amplitude = 0 }) {
       if (rightEyeRef.current.material) rightEyeRef.current.material.color.lerp(targetColor, 0.1);
     }
 
-    // 3. Floating Stylized Holographic Eyebrows
+    // 3. Floating Eyebrows - Subtle Gaze Offset + Emotion Tilt
     if (leftBrowRef.current && rightBrowRef.current) {
-      leftBrowRef.current.position.y = safeLerp(leftBrowRef.current.position.y, config.browY, 0.1, 1.1);
+      leftBrowRef.current.position.x = safeLerp(leftBrowRef.current.position.x, -1.1 + (eyeOffsetX * 0.6), 0.1, -1.1);
+      leftBrowRef.current.position.y = safeLerp(leftBrowRef.current.position.y, config.browY + (eyeOffsetY * 0.6), 0.1, config.browY);
       leftBrowRef.current.rotation.z = safeLerp(leftBrowRef.current.rotation.z, config.browRotZ, 0.1, 0.0);
 
-      rightBrowRef.current.position.y = safeLerp(rightBrowRef.current.position.y, config.browY, 0.1, 1.1);
+      rightBrowRef.current.position.x = safeLerp(rightBrowRef.current.position.x, 1.1 + (eyeOffsetX * 0.6), 0.1, 1.1);
+      rightBrowRef.current.position.y = safeLerp(rightBrowRef.current.position.y, config.browY + (eyeOffsetY * 0.6), 0.1, config.browY);
       rightBrowRef.current.rotation.z = safeLerp(rightBrowRef.current.rotation.z, -config.browRotZ, 0.1, 0.0);
 
       if (leftBrowRef.current.material) leftBrowRef.current.material.color.lerp(targetColor, 0.1);

@@ -8,12 +8,14 @@ import numpy as np
 import os
 os.environ["HF_HUB_OFFLINE"] = "1"
 
+import io
+import soundfile as sf
 import httpx
 
 class Mouth:
-    def __init__(self, voice: str = 'en-US-JennyNeural'):
-        print("[Mouth] Initializing Pocket TTS Pipeline (CPU)...")
-        self.api_url = "http://localhost:8086/v1/audio/speech"
+    def __init__(self, voice: str = 'alba'):
+        print("[Mouth] Initializing Pocket TTS Pipeline...")
+        self.api_url = "http://localhost:8086/tts"
         self.voice = voice
         self.sample_rate = 24000
         
@@ -64,24 +66,20 @@ class Mouth:
             
         self.is_synthesizing = True
         try:
-            payload = {
-                "model": "pocket-tts-v1",
-                "input": text,
-                "voice": self.voice,
-                "response_format": "pcm"
-            }
-            # Stream raw PCM chunks directly from Pocket TTS server
-            with httpx.Client() as client:
-                with client.stream("POST", self.api_url, json=payload, timeout=10.0) as response:
-                    if response.status_code == 200:
-                        for chunk in response.iter_bytes(chunk_size=4096):
-                            if chunk:
-                                # Convert int16 PCM bytes to float32 numpy array
-                                audio_np = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
-                                with self.buffer_lock:
-                                    self.playback_buffer = np.concatenate([self.playback_buffer, audio_np])
-                    else:
-                        print(f"[Mouth Error] Pocket TTS returned {response.status_code}")
+            # Pocket TTS accepts form data with 'text'
+            data = {"text": text}
+            with httpx.Client(timeout=15.0) as client:
+                response = client.post(self.api_url, data=data)
+                if response.status_code == 200:
+                    # Decode WAV audio stream to float32 numpy array
+                    audio_np, sr = sf.read(io.BytesIO(response.content), dtype='float32')
+                    if audio_np.ndim > 1:
+                        audio_np = audio_np[:, 0] # mono
+                    
+                    with self.buffer_lock:
+                        self.playback_buffer = np.concatenate([self.playback_buffer, audio_np])
+                else:
+                    print(f"[Mouth Error] Pocket TTS returned {response.status_code}: {response.text}")
         except Exception as e:
             print(f"[Mouth Error] Failed to connect to Pocket TTS: {e}")
         finally:
