@@ -99,7 +99,17 @@ class SentenceStreamBuffer:
         self.current_emotion = "neutral"
         # Punctuation regex for split boundaries
         self.sentence_end_pattern = re.compile(r'([.!?\n]+)')
-        self.emotion_pattern = re.compile(r'\[(happy|sad|surprised|excited|angry|hesitant|refusing|neutral)\]', re.IGNORECASE)
+        self.emotion_pattern = re.compile(r'\[([a-zA-Z_-]+)\]')
+        self.emotion_map = {
+            "happy": "happy", "joy": "happy", "joyful": "happy", "cheerful": "happy",
+            "excited": "excited", "enthusiastic": "excited", "energetic": "excited",
+            "sad": "sad", "empathetic": "sad", "sympathetic": "sad", "sorrowful": "sad",
+            "surprised": "surprised", "shocked": "surprised", "curious": "surprised",
+            "angry": "angry", "annoyed": "angry", "frustrated": "angry",
+            "hesitant": "hesitant", "nervous": "hesitant", "thoughtful": "hesitant",
+            "refusing": "refusing", "stern": "refusing", "disagree": "refusing",
+            "neutral": "neutral", "calm": "neutral"
+        }
 
     def push_token(self, token: str):
         self.buffer += token
@@ -107,7 +117,9 @@ class SentenceStreamBuffer:
         # Check if new token updates current sentence emotion
         emo_match = self.emotion_pattern.search(token)
         if emo_match:
-            self.current_emotion = emo_match.group(1).lower()
+            raw_emo = emo_match.group(1).lower()
+            if raw_emo in self.emotion_map:
+                self.current_emotion = self.emotion_map[raw_emo]
 
         parts = self.sentence_end_pattern.split(self.buffer)
         
@@ -116,7 +128,7 @@ class SentenceStreamBuffer:
             # Reconstruct sentences up to the last split
             for i in range(0, len(parts) - 1, 2):
                 sentence = parts[i] + parts[i+1]
-                # Strip inline emotion tags before TTS synthesis
+                # Strip any inline [emotion] tags before TTS synthesis
                 clean_sentence = self.emotion_pattern.sub('', sentence).strip()
                 if clean_sentence:
                     print(f"\n[Mouth Synthesis Trigger] [{self.current_emotion.upper()}] '{clean_sentence}'")
