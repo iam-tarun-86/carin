@@ -1,9 +1,21 @@
 import os
 import sys
+import warnings
+import logging
+
+# Suppress all library warnings and verbose logs
+warnings.filterwarnings("ignore")
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
+logging.getLogger("torch").setLevel(logging.ERROR)
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
 
 # Suppress Hugging Face Symlink Warning and enable offline mode on Windows
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
-os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 # Add all nvidia bin directories to DLL search path for CTranslate2 / PyTorch
 nvidia_base = os.path.join(os.path.dirname(__file__), "venv311", "Lib", "site-packages", "nvidia")

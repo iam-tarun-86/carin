@@ -132,14 +132,14 @@ class SentenceStreamBuffer:
         self.sentence_end_pattern = re.compile(r'([.!?\n]+)')
         self.emotion_pattern = re.compile(r'\[([a-zA-Z_-]+)\]')
         self.emotion_map = {
-            "happy": "happy", "joy": "happy", "joyful": "happy", "cheerful": "happy",
-            "excited": "excited", "enthusiastic": "excited", "energetic": "excited",
-            "sad": "sad", "empathetic": "sad", "sympathetic": "sad", "sorrowful": "sad",
-            "surprised": "surprised", "shocked": "surprised", "curious": "surprised",
-            "angry": "angry", "annoyed": "angry", "frustrated": "angry",
-            "hesitant": "hesitant", "nervous": "hesitant", "thoughtful": "hesitant",
-            "refusing": "refusing", "stern": "refusing", "disagree": "refusing",
-            "neutral": "neutral", "calm": "neutral"
+            "happy": "happy", "joy": "happy", "joyful": "happy", "cheerful": "happy", "smile": "happy", "smiles": "happy", "grin": "happy", "grinning": "happy", "laugh": "happy", "chuckle": "happy", "giggle": "happy", "wink": "happy",
+            "excited": "excited", "enthusiastic": "excited", "energetic": "excited", "amazed": "excited",
+            "sad": "sad", "empathetic": "sad", "sympathetic": "sad", "sorrowful": "sad", "concerned": "sad", "teary-eyed": "sad", "crying": "sad", "gloomy": "sad",
+            "surprised": "surprised", "shocked": "surprised", "curious": "surprised", "astonished": "surprised",
+            "angry": "angry", "annoyed": "angry", "frustrated": "angry", "irritated": "angry",
+            "hesitant": "hesitant", "nervous": "hesitant", "thoughtful": "hesitant", "confused": "hesitant", "uncertain": "hesitant", "puzzled": "hesitant",
+            "refusing": "refusing", "stern": "refusing", "disagree": "refusing", "denying": "refusing",
+            "neutral": "neutral", "calm": "neutral", "relaxed": "neutral"
         }
 
     def push_token(self, token: str):

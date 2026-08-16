@@ -70,12 +70,16 @@ function Stop-VoiceAgentProcesses {
 # Pre-cleanup in case previous instances are still running
 Stop-VoiceAgentProcesses -VitePid 0 -TTSPid 0
 
-# Optimize PyTorch VRAM to prevent CUDA OOM with Whisper Turbo + LLM
-$env:PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True"
+# Suppress noisy library warnings
+$env:HF_HUB_DISABLE_SYMLINKS_WARNING = "1"
+$env:HF_HUB_DISABLE_IMPLICIT_TOKEN = "1"
+$env:TOKENIZERS_PARALLELISM = "false"
+$env:PYTHONWARNINGS = "ignore"
 
-# Start Pocket TTS Server in background with INT8 quantization to save VRAM
+# Start Pocket TTS Server in background with INT8 quantization (logging to background log)
 Write-Host "[INFO] Starting Pocket TTS Server on port 8086 (Quantized)..." -ForegroundColor Cyan
-$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\pocket-tts.exe serve --port 8086 --quantize" -NoNewWindow -PassThru
+$ttsLog = Join-Path $env:TEMP "pocket_tts.log"
+$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\pocket-tts.exe serve --port 8086 --quantize > `"$ttsLog`" 2>&1" -NoNewWindow -PassThru
 
 # Start React Dev Server in background
 Write-Host "[INFO] Starting React UI Dev Server..." -ForegroundColor Cyan
