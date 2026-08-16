@@ -94,11 +94,37 @@ class SyncMCPClient:
         self.client.close()
 
 
+from router import NeedleRouter
+
 class Brain:
     def __init__(self, api_url: str = "http://localhost:8085/v1/chat/completions"):
         # Windows 11 port forwarding routes localhost:8085 to WSL2 when llama-server is listening on 0.0.0.0 in WSL2
         self.api_url = api_url
         self.memory = MemoryManager()
+        self.router = NeedleRouter(tool_executor=self.execute_mcp_tool)
+
+    @staticmethod
+    def execute_mcp_tool(tool_name: str, args: dict) -> str:
+        """Executes a tool on the active MCP servers."""
+        if tool_name == "get_current_time":
+            client_url = "http://localhost:3002"
+            wsl_tool_name = tool_name
+        else:
+            client_url = "http://localhost:3001"
+            wsl_tool_name = tool_name.replace("_", "-")
+
+        try:
+            mcp_client = SyncMCPClient(client_url)
+            mcp_client.start()
+            res_content = mcp_client.call_tool(wsl_tool_name, args)
+            mcp_client.close()
+            texts = []
+            for item in res_content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    texts.append(item.get("text", ""))
+            return "\n".join(texts)
+        except Exception as e:
+            return f"Error executing tool: {e}"
 
     def stream_chat(self, prompt: str, system_prompt: str = None) -> Generator[str, None, None]:
         now_dt = datetime.datetime.now()
@@ -117,96 +143,34 @@ class Brain:
                 "3. Start your response with an emotion tag in square brackets to control your 3D facial expressions and visual aura. "
                 "Strictly choose from: `[happy]`, `[sad]`, `[surprised]`, `[excited]`, `[angry]`, `[hesitant]`, `[refusing]`, or `[neutral]`.\n"
                 "4. If the user asks you to make an expression (e.g. 'make a sad expression' or 'look angry'), immediately use that emotion tag and react naturally (e.g. '[sad] Like this? Everything feels a little gloomy now.').\n"
-                "5. TOOL USAGE: You already know the exact local time and date above. ONLY call search tools when the user explicitly asks you to look up external web facts (e.g. 'search for...', 'who won today', 'latest news'). NEVER call tools during casual conversation."
+                "5. Never use artificial pet names or clichés."
             )
 
         headers = {"Content-Type": "application/json"}
-        
-        # Define the tools available via the WSL2 MCP servers
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_current_time",
-                    "description": "Get the current date and time.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "full_web_search",
-                    "description": "Search the web and fetch complete page content from top results.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                    "type": "string",
-                                    "description": "The search query (e.g. 'who won the Super Bowl', 'weather in New York')."
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_web_search_summaries",
-                    "description": "Search the web and return only snippets/summaries of results without fetching full content.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The search query."
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_single_web_page_content",
-                    "description": "Extract and return the full content of a specific single webpage URL.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {
-                                "type": "string",
-                                "description": "The web URL to fetch."
-                            }
-                        },
-                        "required": ["url"]
-                    }
-                }
-            }
-        ]
 
-        # Fetch conversation history and semantic recall string
+        # 1. Check intent via 14MB Needle Router
+        is_tool_intent, tool_output = self.router.route_query(prompt)
+
+        # 2. Fetch conversation history and semantic recall string
         history_messages, memory_context = self.memory.get_context(prompt)
 
-        # Merge the memory context into the single system prompt to prevent Jinja template crashes
+        # Merge memory context and any live tool output into the system prompt
         final_system_prompt = system_prompt
         if memory_context:
             final_system_prompt += f"\n\nRECALLED PAST CONTEXT (Use this if relevant to the user's prompt):\n{memory_context}"
+        if is_tool_intent and tool_output:
+            final_system_prompt += f"\n\nLIVE SEARCH RESULTS (Answer the user using this fresh data):\n{tool_output}"
 
         messages = [{"role": "system", "content": final_system_prompt}]
         messages.extend(history_messages)
         messages.append({"role": "user", "content": prompt})
 
+        # Pure streaming mode without tool schema overhead -> TTFT < 350ms!
         payload = {
             "messages": messages,
             "stream": True,
             "max_tokens": 2048,
-            "temperature": 0.5,
-            "tools": tools,
-            "tool_choice": "auto"
+            "temperature": 0.6
         }
         
         accumulated_tool_calls = {}
