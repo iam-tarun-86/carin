@@ -40,6 +40,36 @@ Write-Host ""
 Write-Host "[INFO] Starting Voice Agent Orchestrator & React UI Dev Server..." -ForegroundColor Cyan
 Write-Host ""
 
+# Function to clean up processes by port and PID tree
+function Stop-VoiceAgentProcesses {
+    param([int]$VitePid, [int]$TTSPid)
+    Write-Host ""
+    Write-Host "[INFO] Cleaning up background servers..." -ForegroundColor Cyan
+
+    if ($VitePid) {
+        taskkill.exe /F /T /PID $VitePid 2>$null
+    }
+    if ($TTSPid) {
+        taskkill.exe /F /T /PID $TTSPid 2>$null
+    }
+
+    # Clean up any leftover listeners on ports 8086, 5173, 8765
+    $ports = @(8086, 5173, 8765)
+    foreach ($p in $ports) {
+        $conns = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue
+        if ($conns) {
+            foreach ($c in $conns) {
+                if ($c.OwningProcess -and $c.OwningProcess -gt 0) {
+                    taskkill.exe /F /T /PID $c.OwningProcess 2>$null
+                }
+            }
+        }
+    }
+}
+
+# Pre-cleanup in case previous instances are still running
+Stop-VoiceAgentProcesses -VitePid 0 -TTSPid 0
+
 # Optimize PyTorch VRAM to prevent CUDA OOM with Whisper Turbo + LLM
 $env:PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True"
 
@@ -55,13 +85,8 @@ try {
     Write-Host "[INFO] Starting Voice Agent Orchestrator (main.py)..." -ForegroundColor Cyan
     & ".\venv311\Scripts\python.exe" "main.py"
 } finally {
-    if ($ViteProcess) {
-        Write-Host ""
-        Write-Host "[INFO] Stopping React dev server..." -ForegroundColor Cyan
-        Stop-Process -Id $ViteProcess.Id -Force -ErrorAction SilentlyContinue
-    }
-    if ($PocketTTSProcess) {
-        Write-Host "[INFO] Stopping Pocket TTS Server..." -ForegroundColor Cyan
-        Stop-Process -Id $PocketTTSProcess.Id -Force -ErrorAction SilentlyContinue
-    }
+    $vPid = if ($ViteProcess) { $ViteProcess.Id } else { 0 }
+    $tPid = if ($PocketTTSProcess) { $PocketTTSProcess.Id } else { 0 }
+    Stop-VoiceAgentProcesses -VitePid $vPid -TTSPid $tPid
+    Write-Host "[INFO] All services stopped cleanly." -ForegroundColor Green
 }
