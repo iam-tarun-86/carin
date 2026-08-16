@@ -40,9 +40,12 @@ Write-Host ""
 Write-Host "[INFO] Starting Voice Agent Orchestrator & React UI Dev Server..." -ForegroundColor Cyan
 Write-Host ""
 
-# Start Pocket TTS Server in background
-Write-Host "[INFO] Starting Pocket TTS Server on port 8086..." -ForegroundColor Cyan
-$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\pocket-tts.exe serve --port 8086" -NoNewWindow -PassThru
+# Optimize PyTorch VRAM to prevent CUDA OOM with Whisper Turbo + LLM
+$env:PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True"
+
+# Start Pocket TTS Server in background with INT8 quantization to save VRAM
+Write-Host "[INFO] Starting Pocket TTS Server on port 8086 (Quantized)..." -ForegroundColor Cyan
+$PocketTTSProcess = Start-Process cmd.exe -ArgumentList "/c .\venv311\Scripts\pocket-tts.exe serve --port 8086 --quantize" -NoNewWindow -PassThru
 
 # Start React Dev Server in background
 Write-Host "[INFO] Starting React UI Dev Server..." -ForegroundColor Cyan
