@@ -22,7 +22,12 @@ class Mouth:
         # Audio buffer for active streaming playback
         self.playback_buffer = np.array([], dtype='float32')
         self.buffer_lock = threading.Lock()
-        self.is_synthesizing = False
+        
+        # Async synthesis queue and worker
+        self.tts_queue = queue.Queue()
+        self.is_active = True
+        self.synthesis_worker_thread = threading.Thread(target=self._synthesis_worker, daemon=True)
+        self.synthesis_worker_thread.start()
         
         # Open continuous async stream
         self.stream = sd.OutputStream(
@@ -33,7 +38,56 @@ class Mouth:
             blocksize=1024 # ~42ms blocks
         )
         self.stream.start()
-        print(f"[Mouth] Pocket TTS Pipeline and Audio Stream ready ({voice} female voice).")
+        print(f"[Mouth] Pocket TTS Async Pipeline ready ({voice} female voice).")
+
+    def _synthesis_worker(self):
+        """Dedicated background thread to query Pocket TTS without blocking the LLM or audio callback."""
+        from state_manager import state_manager
+        with httpx.Client(timeout=15.0) as client:
+            while self.is_active:
+                try:
+                    item = self.tts_queue.get(timeout=0.2)
+                except queue.Empty:
+                    continue
+
+                if item is None:
+                    break
+
+                text, emotion = item
+                if not text.strip():
+                    self.tts_queue.task_done()
+                    continue
+
+                if emotion:
+                    state_manager.set_emotion(emotion)
+
+                try:
+                    data = {
+                        "text": text,
+                        "voice_url": self.voice
+                    }
+                    response = client.post(self.api_url, data=data)
+                    if response.status_code == 200:
+                        audio_np, sr = sf.read(io.BytesIO(response.content), dtype='float32')
+                        if audio_np.ndim > 1:
+                            audio_np = audio_np[:, 0] # mono
+
+                        # Apply quick 5ms edge smoothing to eliminate boundary click/pop
+                        fade_len = min(len(audio_np), int(self.sample_rate * 0.005))
+                        if fade_len > 0:
+                            fade_in = np.linspace(0.0, 1.0, fade_len, dtype='float32')
+                            fade_out = np.linspace(1.0, 0.0, fade_len, dtype='float32')
+                            audio_np[:fade_len] *= fade_in
+                            audio_np[-fade_len:] *= fade_out
+
+                        with self.buffer_lock:
+                            self.playback_buffer = np.concatenate([self.playback_buffer, audio_np])
+                    else:
+                        print(f"[Mouth Error] Pocket TTS returned {response.status_code}: {response.text}")
+                except Exception as e:
+                    print(f"[Mouth Error] Failed to synthesize chunk: {e}")
+                finally:
+                    self.tts_queue.task_done()
 
     def _audio_callback(self, outdata, frames, time_info, status):
         from state_manager import state_manager
@@ -57,43 +111,17 @@ class Mouth:
                 state_manager.send_audio_amplitude(0.0)
 
     def speak_sentence(self, text: str, emotion: str = None):
-        if not text.strip():
-            return
-        
-        from state_manager import state_manager
-        if emotion:
-            state_manager.set_emotion(emotion)
-            
-        self.is_synthesizing = True
-        try:
-            # Pocket TTS accepts form data with 'text' and optional 'voice_url'
-            data = {
-                "text": text,
-                "voice_url": self.voice
-            }
-            with httpx.Client(timeout=15.0) as client:
-                response = client.post(self.api_url, data=data)
-                if response.status_code == 200:
-                    # Decode WAV audio stream to float32 numpy array
-                    audio_np, sr = sf.read(io.BytesIO(response.content), dtype='float32')
-                    if audio_np.ndim > 1:
-                        audio_np = audio_np[:, 0] # mono
-                    
-                    with self.buffer_lock:
-                        self.playback_buffer = np.concatenate([self.playback_buffer, audio_np])
-                else:
-                    print(f"[Mouth Error] Pocket TTS returned {response.status_code}: {response.text}")
-        except Exception as e:
-            print(f"[Mouth Error] Failed to connect to Pocket TTS: {e}")
-        finally:
-            self.is_synthesizing = False
+        """Enqueues sentence for async background synthesis without blocking the streaming loop."""
+        if text.strip():
+            self.tts_queue.put((text, emotion))
 
     def wait_until_done(self):
+        self.tts_queue.join()
         while True:
             with self.buffer_lock:
-                if len(self.playback_buffer) == 0 and not self.is_synthesizing:
+                if len(self.playback_buffer) == 0 and self.tts_queue.empty():
                     break
-            time.sleep(0.05)
+            time.sleep(0.04)
 
 class SentenceStreamBuffer:
     def __init__(self, mouth_instance: Mouth):
