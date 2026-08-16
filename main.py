@@ -45,7 +45,13 @@ def main():
 
     ears = Ears(model_size="turbo", device="cuda", compute_type="float32")
     brain = Brain(api_url="http://localhost:8085/v1/chat/completions")
-    mouth = Mouth()
+    mouth = Mouth(voice="anna")
+
+    def on_voice_change(new_voice):
+        print(f"[Orchestrator] Changing TTS voice to: {new_voice}")
+        mouth.voice = new_voice
+
+    state_manager.register_voice_callback(on_voice_change)
 
     print("\n[Orchestrator] System initialized and ready!")
 

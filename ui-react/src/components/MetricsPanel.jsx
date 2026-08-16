@@ -1,8 +1,24 @@
 import React from "react";
 import { Wifi, Info, Shield, Radio, Terminal, Server } from "lucide-react";
 
-export default function MetricsPanel({ wsStatus, state, emotion, services = {}, onSelectEmotion }) {
+export default function MetricsPanel({ wsStatus, state, emotion, voice = "anna", services = {}, onSelectEmotion, onSelectVoice }) {
   const isConnected = wsStatus === "CONNECTED";
+
+  const femaleVoices = [
+    { id: "anna", name: "Anna (Default EN)" },
+    { id: "cosette", name: "Cosette (Natural)" },
+    { id: "eve", name: "Eve (Calm)" },
+    { id: "jane", name: "Jane (Clear)" },
+    { id: "mary", name: "Mary (Soft)" },
+    { id: "vera", name: "Vera (Warm)" },
+  ];
+
+  const maleVoices = [
+    { id: "alba", name: "Alba (Scottish)" },
+    { id: "marius", name: "Marius (Warm)" },
+    { id: "jean", name: "Jean (Smooth)" },
+    { id: "javert", name: "Javert (Deep)" },
+  ];
 
   return (
     <aside className="sidebar">
@@ -49,6 +65,65 @@ export default function MetricsPanel({ wsStatus, state, emotion, services = {}, 
             <span className="label">CURRENT EMOTION</span>
           </div>
           <span className="value" style={{ textTransform: "uppercase", fontWeight: "bold" }}>{emotion}</span>
+        </div>
+
+        {/* Voice Selector Controls */}
+        <div className="metric-card" style={{ gridColumn: "span 2" }}>
+          <div className="metric-card-header" style={{ marginBottom: "0.4rem", display: "flex", justifyContent: "space-between" }}>
+            <span className="label">TTS VOICE ({voice.toUpperCase()})</span>
+            <a 
+              href="http://localhost:8086" 
+              target="_blank" 
+              rel="noreferrer"
+              style={{ color: "var(--neon-blue)", fontSize: "0.68rem", textDecoration: "underline", cursor: "pointer" }}
+            >
+              Open Web Tester ↗
+            </a>
+          </div>
+          
+          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>FEMALE VOICES:</div>
+          <div className="voice-buttons" style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginBottom: "0.5rem" }}>
+            {femaleVoices.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => onSelectVoice && onSelectVoice(v.id)}
+                style={{
+                  padding: "0.25rem 0.45rem",
+                  fontSize: "0.68rem",
+                  borderRadius: "4px",
+                  border: voice === v.id ? "1px solid var(--neon-blue)" : "1px solid rgba(255,255,255,0.1)",
+                  background: voice === v.id ? "rgba(0, 243, 255, 0.25)" : "rgba(10,15,30,0.6)",
+                  color: voice === v.id ? "var(--neon-blue)" : "#cbd5e1",
+                  cursor: "pointer",
+                  fontWeight: voice === v.id ? "bold" : "normal"
+                }}
+              >
+                {v.name}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>MALE VOICES:</div>
+          <div className="voice-buttons" style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+            {maleVoices.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => onSelectVoice && onSelectVoice(v.id)}
+                style={{
+                  padding: "0.25rem 0.45rem",
+                  fontSize: "0.68rem",
+                  borderRadius: "4px",
+                  border: voice === v.id ? "1px solid var(--neon-blue)" : "1px solid rgba(255,255,255,0.1)",
+                  background: voice === v.id ? "rgba(0, 243, 255, 0.25)" : "rgba(10,15,30,0.6)",
+                  color: voice === v.id ? "var(--neon-blue)" : "#cbd5e1",
+                  cursor: "pointer",
+                  fontWeight: voice === v.id ? "bold" : "normal"
+                }}
+              >
+                {v.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Emotion Override Controls */}

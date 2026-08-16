@@ -10,6 +10,7 @@ export default function App() {
   const [wsStatus, setWsStatus] = useState("CONNECTING...");
   const [state, setState] = useState("idle");
   const [emotion, setEmotion] = useState("neutral");
+  const [voice, setVoice] = useState("anna");
   const [messages, setMessages] = useState([]);
   const [amplitude, setAmplitude] = useState(0);
 
@@ -31,6 +32,13 @@ export default function App() {
     setEmotion(newEmotion);
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({ type: "set_emotion", emotion: newEmotion }));
+    }
+  };
+
+  const sendVoice = (newVoice) => {
+    setVoice(newVoice);
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: "set_voice", voice: newVoice }));
     }
   };
 
@@ -57,7 +65,12 @@ export default function App() {
             case "status":
               setState(data.state);
               setEmotion(data.emotion);
+              if (data.voice) setVoice(data.voice);
               document.body.className = `state-${data.state}`;
+              break;
+
+            case "current_voice":
+              setVoice(data.voice);
               break;
 
             case "viseme":
@@ -156,7 +169,15 @@ export default function App() {
         if(e.target.className.includes('settings-modal-overlay')) setIsSettingsOpen(false);
       }}>
         <div className="settings-modal">
-          <MetricsPanel wsStatus={wsStatus} state={state} emotion={emotion} services={services} onSelectEmotion={sendEmotion} />
+          <MetricsPanel 
+            wsStatus={wsStatus} 
+            state={state} 
+            emotion={emotion} 
+            voice={voice}
+            services={services} 
+            onSelectEmotion={sendEmotion}
+            onSelectVoice={sendVoice}
+          />
           <ChatLogs messages={messages} />
         </div>
       </div>

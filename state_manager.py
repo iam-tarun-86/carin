@@ -11,8 +11,20 @@ class StateManager:
         self.state = "idle"
         self.emotion = "neutral"
         
-        self.loop = None
-        self.server_thread = None
+        self.current_voice = "anna"
+        self.voice_change_callback = None
+
+    def register_voice_callback(self, callback):
+        self.voice_change_callback = callback
+
+    def set_voice(self, voice):
+        self.current_voice = voice
+        if self.voice_change_callback:
+            self.voice_change_callback(voice)
+        self._broadcast({
+            "type": "current_voice",
+            "voice": self.current_voice
+        })
 
     def start(self):
         """Starts the WebSocket server in a daemon background thread."""
@@ -73,7 +85,8 @@ class StateManager:
         await websocket.send(json.dumps({
             "type": "status",
             "state": self.state,
-            "emotion": self.emotion
+            "emotion": self.emotion,
+            "voice": self.current_voice
         }))
         try:
             async for message in websocket:
@@ -84,6 +97,8 @@ class StateManager:
                         self.set_emotion(data.get("emotion", "neutral"))
                     elif msg_type == "set_state":
                         self.set_state(data.get("state", "idle"))
+                    elif msg_type == "set_voice":
+                        self.set_voice(data.get("voice", "anna"))
                 except Exception:
                     pass
         except websockets.exceptions.ConnectionClosed:
