@@ -13,8 +13,8 @@ import soundfile as sf
 import httpx
 
 class Mouth:
-    def __init__(self, voice: str = 'alba'):
-        print("[Mouth] Initializing Pocket TTS Pipeline...")
+    def __init__(self, voice: str = 'anna'):
+        print(f"[Mouth] Initializing Pocket TTS Pipeline (Voice: {voice})...")
         self.api_url = "http://localhost:8086/tts"
         self.voice = voice
         self.sample_rate = 24000
@@ -33,7 +33,7 @@ class Mouth:
             blocksize=1024 # ~42ms blocks
         )
         self.stream.start()
-        print("[Mouth] Pocket TTS Pipeline and Audio Stream ready.")
+        print(f"[Mouth] Pocket TTS Pipeline and Audio Stream ready ({voice} female voice).")
 
     def _audio_callback(self, outdata, frames, time_info, status):
         from state_manager import state_manager
@@ -66,8 +66,11 @@ class Mouth:
             
         self.is_synthesizing = True
         try:
-            # Pocket TTS accepts form data with 'text'
-            data = {"text": text}
+            # Pocket TTS accepts form data with 'text' and optional 'voice_url'
+            data = {
+                "text": text,
+                "voice_url": self.voice
+            }
             with httpx.Client(timeout=15.0) as client:
                 response = client.post(self.api_url, data=data)
                 if response.status_code == 200:
