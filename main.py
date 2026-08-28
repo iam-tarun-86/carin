@@ -67,53 +67,59 @@ def main():
 
     print("\n[Orchestrator] System initialized and ready!")
 
-    while True:
-        try:
-            # 1. Ear Stage: Auto-Adaptive VAD Capture & Transcribe
-            state_manager.set_state("listening")
-            audio_buffer = record_user_speech()
-            if audio_buffer.size == 0:
-                continue
+    try:
+        while True:
+            try:
+                # 1. Ear Stage: Auto-Adaptive VAD Capture & Transcribe
+                state_manager.set_state("listening")
+                audio_buffer = record_user_speech()
+                if audio_buffer.size == 0:
+                    continue
 
-            state_manager.set_state("thinking")
-            user_text = ears.transcribe_audio_buffer(audio_buffer)
+                state_manager.set_state("thinking")
+                user_text = ears.transcribe_audio_buffer(audio_buffer)
 
-            if not user_text:
-                print("[Orchestrator] No speech recognized. Listening again...")
-                continue
+                if not user_text:
+                    print("[Orchestrator] No speech recognized. Listening again...")
+                    continue
 
-            print(f"\n[USER]: {user_text}")
-            if user_text.lower().strip() in ["exit", "quit", "stop"]:
-                print("[Orchestrator] Exiting voice agent loop. Goodbye!")
+                print(f"\n[USER]: {user_text}")
+                if user_text.lower().strip() in ["exit", "quit", "stop", "goodbye"]:
+                    print("[Orchestrator] Exiting voice agent loop. Goodbye!")
+                    break
+
+                # 2 & 3. Brain & Mouth Stage: Stream tokens -> Synthesize sentences
+                sentence_buffer = SentenceStreamBuffer(mouth)
+                print("[ASSISTANT]: ", end="", flush=True)
+
+                token_count = 0
+                start_time = time.time()
+                first_token_time = None
+
+                for token in brain.stream_chat(user_text):
+                    if first_token_time is None:
+                        first_token_time = (time.time() - start_time) * 1000
+                    print(token, end="", flush=True)
+                    sentence_buffer.push_token(token)
+                    token_count += 1
+
+                sentence_buffer.flush()
+                mouth.wait_until_done()
+                state_manager.set_state("idle")
+
+                if first_token_time is not None:
+                    print(f"\n[Latency Metrics] Time to First Token (TTFT): {first_token_time:.1f}ms")
+
+            except KeyboardInterrupt:
+                print("\n[Orchestrator] Shutting down...")
                 break
-
-            # 2 & 3. Brain & Mouth Stage: Stream tokens -> Synthesize sentences
-            sentence_buffer = SentenceStreamBuffer(mouth)
-            print("[ASSISTANT]: ", end="", flush=True)
-
-            token_count = 0
-            start_time = time.time()
-            first_token_time = None
-
-            for token in brain.stream_chat(user_text):
-                if first_token_time is None:
-                    first_token_time = (time.time() - start_time) * 1000
-                print(token, end="", flush=True)
-                sentence_buffer.push_token(token)
-                token_count += 1
-
-            sentence_buffer.flush()
-            mouth.wait_until_done()
-            state_manager.set_state("idle")
-
-            if first_token_time is not None:
-                print(f"\n[Latency Metrics] Time to First Token (TTFT): {first_token_time:.1f}ms")
-
-        except KeyboardInterrupt:
-            print("\n[Orchestrator] Stopped by user.")
-            break
-        except Exception as e:
-            print(f"\n[Orchestrator Error]: {e}")
+            except Exception as e:
+                print(f"\n[Orchestrator Error]: {e}")
+    finally:
+        print("[Orchestrator] Releasing audio and background resources...")
+        mouth.close()
+        state_manager.set_state("offline")
+        print("[Orchestrator] Clean exit complete.")
 
 if __name__ == "__main__":
     main()

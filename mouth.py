@@ -123,6 +123,20 @@ class Mouth:
                     break
             time.sleep(0.04)
 
+    def close(self):
+        """Cleanly terminates audio stream and worker thread."""
+        self.is_active = False
+        try:
+            self.tts_queue.put_nowait(None)
+        except Exception:
+            pass
+        try:
+            if hasattr(self, 'stream') and self.stream:
+                self.stream.stop()
+                self.stream.close()
+        except Exception:
+            pass
+
 class SentenceStreamBuffer:
     def __init__(self, mouth_instance: Mouth):
         self.mouth = mouth_instance
