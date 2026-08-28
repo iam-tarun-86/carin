@@ -168,7 +168,32 @@ export default function App() {
       <div className={`settings-modal-overlay ${isSettingsOpen ? 'open' : ''}`} onClick={(e) => {
         if(e.target.className.includes('settings-modal-overlay')) setIsSettingsOpen(false);
       }}>
-        <div className="settings-modal">
+        <div className="settings-modal" style={{ position: 'relative' }}>
+          <button 
+            className="settings-close-btn"
+            onClick={() => setIsSettingsOpen(false)}
+            title="Close Settings"
+            style={{
+              position: 'absolute',
+              top: '15px',
+              right: '15px',
+              zIndex: 100,
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#fff',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1rem',
+              fontWeight: 'bold'
+            }}
+          >
+            ✕
+          </button>
           <MetricsPanel 
             wsStatus={wsStatus} 
             state={state} 
