@@ -55,7 +55,7 @@ Stop-VoiceAgentProcesses
 # 4. Check if llama.cpp server is active on port 8085
 $serverReady = $false
 try {
-    $res = Invoke-WebRequest -Uri "http://localhost:$Port/v1/models" -TimeoutSec 2 -ErrorAction SilentlyContinue
+    $res = Invoke-WebRequest -Uri "http://localhost:$Port/v1/models" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
     if ($res.StatusCode -eq 200) {
         $serverReady = $true
     }
@@ -90,7 +90,7 @@ while (-not $ttsReady -and $ttsRetries -lt 30) {
     Start-Sleep -Milliseconds 500
     $ttsRetries++
     try {
-        $res = Invoke-WebRequest -Uri "http://localhost:8086/docs" -TimeoutSec 1 -ErrorAction SilentlyContinue
+        $res = Invoke-WebRequest -Uri "http://localhost:8086/docs" -UseBasicParsing -TimeoutSec 1 -ErrorAction SilentlyContinue
         if ($res.StatusCode -eq 200) {
             $ttsReady = $true
         }

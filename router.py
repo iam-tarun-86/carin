@@ -53,30 +53,46 @@ class NeedleRouter:
 
     def route_query(self, user_text: str) -> Tuple[bool, Optional[str]]:
         """
-        Analyzes user text using the 14MB Needle model.
+        Analyzes user text to determine if a real-time web tool is genuinely required.
         Returns:
             (is_tool_call, tool_output_text)
-            - If is_tool_call is False: Query is conversational, pass directly to Qwen with 0 tools.
-            - If is_tool_call is True: Tool was executed by Needle, pass output context to Qwen.
+            - If False: Conversational turn, streamed directly to Qwen in ~300ms.
+            - If True: Tool executed by Needle/MCP, fresh data passed to Qwen.
         """
-        if not self.available or not self.agent:
+        if not user_text or not user_text.strip():
             return False, None
 
-        # Filter out casual greetings or short chat utterances instantly in 0ms
         clean = user_text.strip().lower()
-        if any(clean.startswith(g) for g in ["hi", "hello", "hey", "how are you", "what's up", "good morning", "good evening", "what is your name", "who are you"]):
+
+        # 1. Zero-latency intent filter: only invoke search tools for genuine web/factual lookups
+        search_triggers = [
+            "search", "google", "look up", "lookup", "find out", "browse", "http://", "https://", "www.",
+            "latest news", "breaking news", "weather in", "forecast in", "who won", "score of",
+            "stock price", "current price of", "recent news about"
+        ]
+        
+        has_search_intent = any(trigger in clean for trigger in search_triggers)
+        if not has_search_intent:
+            # 99% of voice agent conversation: pure zero-latency chat
             return False, None
 
-        try:
-            res = self.agent.run(user_text, max_steps=2)
-            if res and res.get("results") and len(res["results"]) > 0:
-                results = res["results"]
-                # If tool executed and returned substantive data
-                combined_output = "\n".join(str(r) for r in results if r)
-                if combined_output:
-                    print(f"[Needle Router] Tool executed successfully for query: '{user_text}'")
-                    return True, combined_output
-        except Exception as e:
-            print(f"[Needle Warning] Error during routing: {e}")
+        # 2. If genuine search intent detected, route through tool executor
+        if self.tool_executor:
+            try:
+                # Clean up query string
+                query = clean
+                for prefix in ["search for", "search the web for", "google", "look up", "search"]:
+                    if query.startswith(prefix):
+                        query = query[len(prefix):].strip()
+                if not query:
+                    query = clean
+
+                print(f"[Router] Executing live web search for: '{query}'...")
+                output = self.tool_executor("full_web_search", {"query": query})
+                if output and len(output.strip()) > 0:
+                    print(f"[Router] Web search completed ({len(output)} chars).")
+                    return True, output
+            except Exception as e:
+                print(f"[Router Warning] Web search error: {e}")
 
         return False, None
