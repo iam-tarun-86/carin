@@ -17,7 +17,7 @@
 
 ---
 
-<img src="assets/carin_hologram_face.png" alt="Carin 3D Holographic Interface" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,242,254,0.3);" />
+<img src="assets/carin_hologram_face.png" alt="Carin 3D Holographic Interface" width="100%" style="border-radius: 14px; box-shadow: 0 12px 40px rgba(0,242,254,0.35);" />
 
 </div>
 
@@ -42,10 +42,24 @@
 
 ---
 
-<div align="center">
-  <img src="assets/carin_settings_ui.png" alt="Carin Settings Modal & Glassmorphic Dashboard" width="90%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
-  <p><em>Glassmorphic settings modal featuring live voice switching, emotion overrides, system metrics, and conversation logs.</em></p>
-</div>
+## 📸 Live UI Showcase
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <img src="assets/carin_settings_ui.png" alt="Glassmorphic Settings Modal" width="100%" style="border-radius: 10px;" />
+      <br />
+      <strong>🎛️ Glassmorphic Control Panel & Metrics</strong>
+      <p><em>Real-time connection stats, live female/male voice selector capsules, and active conversation stream.</em></p>
+    </td>
+    <td width="50%" align="center">
+      <img src="assets/carin_excited_state.png" alt="Emotion Reactive Hologram" width="100%" style="border-radius: 10px;" />
+      <br />
+      <strong>🎭 Dynamic Emotion-Reactive Persona</strong>
+      <p><em>Procedural 3D facial expressions, eyebrow tilt, and chromatic particle aura adapting in real-time.</em></p>
+    </td>
+  </tr>
+</table>
 
 ---
 
